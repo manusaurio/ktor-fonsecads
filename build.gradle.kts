@@ -8,7 +8,7 @@ plugins {
                 id("org.jetbrains.kotlin.plugin.serialization") version "1.8.22"
 }
 
-group = "ar.pelotude"
+group = "ar.pelotude.ktorfds"
 version = "0.0.1"
 application {
     mainClass.set("io.ktor.server.netty.EngineMain")
