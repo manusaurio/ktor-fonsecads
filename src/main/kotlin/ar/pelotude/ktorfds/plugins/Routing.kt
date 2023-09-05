@@ -1,13 +1,11 @@
-package ar.pelotude.plugins
+package ar.pelotude.ktorfds.plugins
 
-import io.ktor.server.routing.*
-import io.ktor.server.response.*
-import io.ktor.server.application.*
+import ar.pelotude.ktorfds.routes.messagesRouting
+import io.ktor.server.routing.routing
+import io.ktor.server.application.Application
 
 fun Application.configureRouting() {
     routing {
-        get("/") {
-            call.respondText("Hello World!")
-        }
+        messagesRouting()
     }
 }
