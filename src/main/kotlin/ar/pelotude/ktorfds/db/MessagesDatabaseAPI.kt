@@ -8,9 +8,9 @@ interface MessagesDatabase<T> {
     suspend fun getMessage(id: Long): GeoMessage<T>?
 
     suspend fun findMessages(
-        origin: Location?,
-        since: Long?,
-        vararg id: Long?,
+        origin: Location? = null,
+        since: Long? = null,
+        vararg id: Long,
     ): Collection<GeoMessage<T>>
 
     suspend fun addMessage(
