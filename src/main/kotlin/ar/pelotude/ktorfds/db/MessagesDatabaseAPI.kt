@@ -9,8 +9,10 @@ interface MessagesDatabase<T> {
 
     suspend fun findMessages(
         origin: Location? = null,
+        maxDistance: Double? = null,
         since: Long? = null,
-        vararg id: Long,
+        limit: Int = 50,
+        vararg ids: Long,
     ): Collection<GeoMessage<T>>
 
     suspend fun addMessage(
