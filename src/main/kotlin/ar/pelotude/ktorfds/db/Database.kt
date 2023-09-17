@@ -2,6 +2,11 @@ package ar.pelotude.ktorfds.db
 
 import ar.pelotude.ktorfds.models.GeoMessage
 import ar.pelotude.ktorfds.models.Location
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.sqlite.SQLiteConfig
 import java.sql.Connection
 import java.sql.DriverManager
@@ -72,6 +77,43 @@ class Database: MessagesDatabase<Long> {
         ).forEach(statement::execute)
 
         if (!autoCommit) commit()
+    }
+
+    private val writingMutex = Mutex()
+
+    // TODO: use HikariCP or something proper to handle connections
+    private val connection = DriverManager.getConnection(
+        dbUrl,
+        config,
+    ).apply {
+        autoCommit = false
+        createStatement().executeUpdate("SELECT load_extension('mod_spatialite');")
+        commit() // Not sure if the spatialite function requires a commit... it shouldn't
+    }
+
+    /** Connection for read-only requests - autocommit on */
+    private val readingConnection = DriverManager.getConnection(
+        dbUrl,
+        config,
+    ).apply {
+        autoCommit = true
+        createStatement().executeUpdate("SELECT load_extension('mod_spatialite');")
+    }
+
+    private suspend inline fun <T: Any?> writingTransaction(
+        crossinline block: CoroutineScope.(conn: Connection) -> T,
+    ): T = writingMutex.withLock {
+        return withContext(Dispatchers.IO) {
+            this.block(connection)
+        }
+    }
+
+    private suspend inline fun <T: Any?> readingTransaction(
+        crossinline block: CoroutineScope.(conn: Connection) -> T,
+    ): T {
+        return withContext(Dispatchers.IO) {
+            this.block(readingConnection)
+        }
     }
 
     init {
