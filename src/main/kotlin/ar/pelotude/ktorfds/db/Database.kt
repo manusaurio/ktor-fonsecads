@@ -238,7 +238,41 @@ class Database: MessagesDatabase<Long> {
         limit: Int,
         vararg ids: Long,
     ): Collection<GeoMessage<Long>> {
-        TODO("Not yet implemented")
+        // I wonder if there's any benefit using a prepared statement over this in this case...
+        val idsCondition: String? = ids.takeIf { ids.isNotEmpty() }?.run {
+            joinToString(separator = ",", prefix = "id in (", postfix = ")")
+        }
+
+        val distanceCondition = if (maxDistance != null && origin != null) {
+            """ST_Distance(
+              ST_Transform(coordinates, 5348),
+              ST_Transform(ST_GeomFromText('POINT(${origin.long} ${origin.lat})', 4326), 5348)
+            ) <= $maxDistance AND level = ${origin.level}""".trimMargin() // 5348?
+        } else null
+
+        val sinceCondition = since?.let {
+            "m.creation_time > $since"
+        }
+
+        val condition = listOfNotNull(
+            idsCondition,
+            distanceCondition,
+            sinceCondition,
+        ).takeIf { it.isNotEmpty() }
+            ?.joinToString(" AND ", prefix = "WHERE ")
+            ?: ""
+
+        return readingTransaction { conn ->
+            conn.createStatement().use { s ->
+                val rs = s.executeQuery(unconditionalSelectSqlTemplate.format(requesterId, condition, limit.toString()))
+
+                generateSequence {
+                    if (rs.next()) {
+                        rs.toGeoMessage(ResultSet::getLong)
+                    } else null
+                }.toList()
+            }
+        }
     }
 
     override suspend fun deleteMessage(id: Long): Boolean {
