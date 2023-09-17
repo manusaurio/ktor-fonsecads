@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import org.sqlite.SQLiteConfig
 import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
 
@@ -168,6 +169,54 @@ class Database: MessagesDatabase<Long> {
         }
     }
 
+    override suspend fun addMessage(
+        userId: Long,
+        location: Location,
+        content: Long,
+    ): GeoMessage<Long>? = writingTransaction { conn ->
+        // TODO: Remove this insertion and add hook
+        var userInsert: PreparedStatement? = null
+        var messageInsert: PreparedStatement? = null
+
+        return@writingTransaction try {
+            userInsert = conn.prepareStatement(
+                "INSERT OR IGNORE INTO user(id) VALUES (?);"
+            ).apply {
+                setLong(1, userId)
+                executeUpdate()
+            }
+
+            messageInsert = conn.prepareStatement(
+                "INSERT INTO message(author_id, content, coordinates, level) " +
+                        "VALUES (?, ?, GeomFromText('POINT(' || ? || ' ' || ? || ')', 4326), ?);"
+            ).apply {
+                setLong(1, userId)
+                setLong(2, content)
+                setString(3, location.lat.toString())
+                setString(4, location.long.toString())
+                setInt(5, location.level)
+                executeUpdate()
+            }
+
+            val res = conn.createStatement().use { s ->
+                s.executeQuery(
+                    unconditionalSelectSqlTemplate.format(userId, "WHERE id = last_insert_rowid()", "1"),
+                ).toGeoMessage(ResultSet::getLong)
+            }
+
+            conn.commit()
+
+            res
+        } catch (e: SQLException) {
+            e.printStackTrace()
+            conn.rollback()
+            null
+        } finally {
+            userInsert?.close()
+            messageInsert?.close()
+        }
+    }
+
     override suspend fun getMessage(id: Long, requesterId: Long): GeoMessage<Long>? = readingTransaction { conn ->
         conn.prepareStatement(
             unconditionalSelectSqlTemplate.format("?", "WHERE id = ? AND deleted = 0", "1")
@@ -197,14 +246,6 @@ class Database: MessagesDatabase<Long> {
     }
 
     override suspend fun vote(messageId: Long, userId: Long, vote: Vote): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun addMessage(
-        userId: Long,
-        location: Location,
-        content: Long,
-    ): GeoMessage<Long>? {
         TODO("Not yet implemented")
     }
 }
