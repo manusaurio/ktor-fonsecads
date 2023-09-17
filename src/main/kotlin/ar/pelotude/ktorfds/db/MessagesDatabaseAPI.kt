@@ -34,11 +34,16 @@ interface MessagesDatabase<T> {
         messageId: Long,
         userId: Long,
         vote: Vote,
-    )
+    ): Boolean
 }
 
-enum class Vote {
-    LIKE,
-    DISLIKE,
-    UNSET,
+enum class Vote(val value: Int) {
+    LIKE(1),
+    DISLIKE(-1),
+    UNSET(0);
+
+    companion object {
+        fun fromInt(value: Int): Vote? =
+            Vote.values().find { it.value == value }
+    }
 }
