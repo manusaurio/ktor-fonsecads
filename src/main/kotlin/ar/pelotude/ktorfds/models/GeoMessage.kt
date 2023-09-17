@@ -18,6 +18,7 @@ data class GeoMessage<T>(
     val creationTime: Long,
     val authorId: Long,
     val deleted: Boolean,
+    val likedByRequester: Int = 0,
 )
 
 @Serializable
@@ -27,6 +28,7 @@ data class PublicGeoMessage<T>(
     val content: T,
     val likes: Long,
     val dislikes: Long,
+    val liked: Int,
     val creationTime: Long,
     val bySelf: Boolean = false
 )
@@ -37,6 +39,7 @@ fun <T> GeoMessage<T>.toPublicGeoMessage(recipientId: Long) = PublicGeoMessage(
     content,
     likes,
     dislikes,
+    likedByRequester,
     creationTime,
-    authorId == recipientId,
+    bySelf = authorId == recipientId,
 )
