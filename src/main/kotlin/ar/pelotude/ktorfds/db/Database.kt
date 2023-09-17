@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import org.sqlite.SQLiteConfig
 import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.ResultSet
 import java.sql.SQLException
 
 class Database: MessagesDatabase<Long> {
@@ -79,6 +80,33 @@ class Database: MessagesDatabase<Long> {
         if (!autoCommit) commit()
     }
 
+    // this prevents repetition, but it's a bit of a mess if I want to change it later...
+    private val unconditionalSelectSqlTemplate = """SELECT id, m.author_id, content, deleted,
+           ST_X(coordinates) as x, ST_Y(coordinates) as y, level,
+           creation_time,
+           COALESCE((SELECT grade FROM like WHERE m.id = like.message_id AND like.author_id = %s), 0) as liked_by_requester,
+           SUM(CASE WHEN grade = 1 THEN 1 ELSE 0 END) AS likes,
+           SUM(CASE WHEN grade = -1 THEN 1 ELSE 0 END) AS dislikes
+            FROM message m
+            LEFT JOIN like
+              ON m.id = like.message_id %s
+            GROUP BY m.id
+            LIMIT %s""".trimMargin()
+
+    private inline fun <T> ResultSet.toGeoMessage(
+        crossinline contentTransformer: ResultSet.(columnLabel: String) -> T,
+    ): GeoMessage<T> = GeoMessage(
+        id = getLong("id"),
+        location = Location(getDouble("x"), getDouble("y"), getInt("level")),
+        content = contentTransformer("content"),
+        likes = getLong("likes"),
+        dislikes = getLong("dislikes"),
+        creationTime = getLong("creation_time"),
+        authorId = getLong("author_id"),
+        deleted = getLong("deleted") != 0L,
+        likedByRequester = getInt("liked_by_requester"),
+    )
+
     private val writingMutex = Mutex()
 
     // TODO: use HikariCP or something proper to handle connections
@@ -140,8 +168,17 @@ class Database: MessagesDatabase<Long> {
         }
     }
 
-    override suspend fun getMessage(id: Long, requesterId: Long): GeoMessage<Long>? {
-        TODO("")
+    override suspend fun getMessage(id: Long, requesterId: Long): GeoMessage<Long>? = readingTransaction { conn ->
+        conn.prepareStatement(
+            unconditionalSelectSqlTemplate.format("?", "WHERE id = ? AND deleted = 0", "1")
+        ).use { s ->
+            s.setLong(1, requesterId)
+            s.setLong(2, id)
+            val rs = s.executeQuery()
+            // conn.commit()
+
+            if (rs.next()) rs.toGeoMessage(ResultSet::getLong) else null
+        }
     }
 
     override suspend fun findMessages(
