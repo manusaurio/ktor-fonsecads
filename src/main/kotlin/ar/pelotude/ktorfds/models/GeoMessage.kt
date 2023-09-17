@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class Location(
     val lat: Double,
     val long: Double,
+    val level: Int,
 )
 
 data class GeoMessage<T>(
