@@ -5,9 +5,10 @@ import ar.pelotude.ktorfds.models.Location
 import ar.pelotude.ktorfds.msgs.Message
 
 interface MessagesDatabase<T> {
-    suspend fun getMessage(id: Long): GeoMessage<T>?
+    suspend fun getMessage(id: Long, requesterId: Long): GeoMessage<T>?
 
     suspend fun findMessages(
+        requesterId: Long,
         origin: Location? = null,
         maxDistance: Double? = null,
         since: Long? = null,
