@@ -275,11 +275,32 @@ class Database: MessagesDatabase<Long> {
         }
     }
 
-    override suspend fun deleteMessage(id: Long): Boolean {
-        TODO("Not yet implemented")
+    override suspend fun vote(messageId: Long, userId: Long, vote: Vote): Boolean = writingTransaction { conn ->
+        conn.prepareStatement(
+            """INSERT INTO like(message_id, author_id, grade) VALUES(?, ?, ?)
+            ON CONFLICT (message_id, author_id) DO
+              UPDATE SET grade=excluded.grade WHERE message_id = excluded.message_id;""".trimMargin()
+        ).use { statement ->
+            return@use try {
+                with(statement) {
+                    setLong(1, messageId)
+                    setLong(2, userId)
+                    setInt(3, vote.value)
+                    executeUpdate()
+                    conn.commit()
+                }
+                true
+            } catch (e: SQLException) {
+                if (e.errorCode == 787) { // (787) SQLITE_CONSTRAINT_FOREIGNKEY
+                    // TODO: Use a thread-safe logger
+                    System.err.println("Someone attempted to vote a non-existant message: mid $messageId uid $userId")
+                } else e.printStackTrace()
+                false
+            }
+        }
     }
 
-    override suspend fun vote(messageId: Long, userId: Long, vote: Vote): Boolean {
+    override suspend fun deleteMessage(id: Long): Boolean {
         TODO("Not yet implemented")
     }
 }
