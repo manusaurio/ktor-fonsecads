@@ -5,6 +5,8 @@ import ar.pelotude.ktorfds.models.Location
 import ar.pelotude.ktorfds.msgs.Message
 
 interface MessagesDatabase<T> {
+    suspend fun createUser(): Long?
+
     suspend fun getMessage(id: Long, requesterId: Long): GeoMessage<T>?
 
     suspend fun findMessages(

@@ -14,10 +14,7 @@ import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
 
-class Database: MessagesDatabase<Long> {
-    // TODO: inject dependency and/or use an env variable
-    private val dbUrl = "jdbc:sqlite:messages.db"
-
+class Database(val dbUrl: String): MessagesDatabase<Long> {
     private val config = SQLiteConfig().apply {
         enforceForeignKeys(true)
         enableLoadExtension(true)
@@ -302,5 +299,18 @@ class Database: MessagesDatabase<Long> {
 
     override suspend fun deleteMessage(id: Long): Boolean {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun createUser(): Long? = writingTransaction { conn ->
+        return@writingTransaction try {
+            conn.createStatement().use { s ->
+                s.executeQuery("INSERT INTO user DEFAULT VALUES RETURNING id;").use { rs ->
+                    rs.getLong(1)
+                }
+            }
+        } catch (e: SQLException) {
+            e.printStackTrace()
+            null
+        }
     }
 }
