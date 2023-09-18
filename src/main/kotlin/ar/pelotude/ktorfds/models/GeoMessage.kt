@@ -30,9 +30,11 @@ data class PublicGeoMessage<T>(
     val dislikes: Long,
     val liked: Int,
     val creationTime: Long,
-    val bySelf: Boolean = false
+    val bySelf: Boolean,
 )
 
+// TODO: the db already handles "likedByRequested"
+//  so it should do the same for "(created) bySelf"
 fun <T> GeoMessage<T>.toPublicGeoMessage(recipientId: Long) = PublicGeoMessage(
     id,
     location,
