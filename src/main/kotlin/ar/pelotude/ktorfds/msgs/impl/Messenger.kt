@@ -72,7 +72,7 @@ class BasicMessenger(
     /**
      * Helper function to quickly validate a value without the overhead of instantiating a [Message]
      */
-    fun quickCheck(value: Long): Boolean = arePartsValid(
+    override fun quickCheck(value: Long): Boolean = arePartsValid(
         (value and 0xff).toInt(),
         (value shr 8 and 0xfff).toInt(),
         (value shr 20 and 0xff).toInt(),

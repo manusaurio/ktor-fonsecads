@@ -40,4 +40,6 @@ interface Conjunction<out T>: MessagePart<T>
  */
 interface Messenger<T, out U> {
     fun create(value: T): Message<T, U>
+
+    fun quickCheck(value: T): Boolean
 }
