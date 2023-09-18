@@ -1,4 +1,4 @@
-package ar.pelotude.plugins
+package ar.pelotude.ktorfds.plugins
 
 import io.ktor.server.plugins.callloging.*
 import org.slf4j.event.*
