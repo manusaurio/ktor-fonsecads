@@ -39,6 +39,9 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.respondXRequestedWith
     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing required header or invalid value: X-Requested-With"))
 
 fun Route.messagesRouting() {
+    val devMode = (environment?.config?.propertyOrNull("ktor.environment")
+        ?: "prod") == "dev"
+
     val database = koinGet<MessagesDatabase<Long>>()
 
     val messenger = koinGet<Messenger<Long, *>>()
@@ -51,9 +54,18 @@ fun Route.messagesRouting() {
         }
 
         database.createUser()?.let { newId ->
+            val userIdCookie = Cookie(
+                name = "userId",
+                value = newId.toString(),
+                path = "/",
+                httpOnly = true,
+                secure = !devMode,
+            )
+
+            call.response.cookies.append(userIdCookie)
+
             call.respond(HttpStatusCode.Created, UserCreationResponse(newId))
         } ?: call.respond(HttpStatusCode.InternalServerError, "Something went wrong...")
-
     }
 
     // TODO: proper auth handling
