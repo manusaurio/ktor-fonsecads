@@ -303,12 +303,16 @@ class Database(val dbUrl: String): MessagesDatabase<Long> {
 
     override suspend fun createUser(): Long? = writingTransaction { conn ->
         return@writingTransaction try {
-            conn.createStatement().use { s ->
+            val newId = conn.createStatement().use { s ->
                 s.executeQuery("INSERT INTO user DEFAULT VALUES RETURNING id;").use { rs ->
                     rs.getLong(1)
                 }
             }
+
+            conn.commit()
+            newId
         } catch (e: SQLException) {
+            // TODO: handle rollback
             e.printStackTrace()
             null
         }
