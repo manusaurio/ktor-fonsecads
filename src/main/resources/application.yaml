@@ -1,4 +1,5 @@
 ktor:
+    environment: $KTOR_ENV
     application:
         modules:
             - ar.pelotude.ktorfds.ApplicationKt.module

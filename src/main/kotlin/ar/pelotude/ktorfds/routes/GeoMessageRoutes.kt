@@ -39,7 +39,7 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.respondXRequestedWith
     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing required header or invalid value: X-Requested-With"))
 
 fun Route.messagesRouting() {
-    val devMode = (environment?.config?.propertyOrNull("ktor.environment")
+    val devMode = (environment?.config?.propertyOrNull("ktor.environment")?.getString()
         ?: "prod") == "dev"
 
     val database = koinGet<MessagesDatabase<Long>>()
