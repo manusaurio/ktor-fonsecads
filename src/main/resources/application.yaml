@@ -1,5 +1,6 @@
 ktor:
     environment: $KTOR_ENV
+    signingKey: "$FDS_SIGNING_KEY:6819b57a326945c1968f45236589"
     application:
         modules:
             - ar.pelotude.ktorfds.ApplicationKt.module

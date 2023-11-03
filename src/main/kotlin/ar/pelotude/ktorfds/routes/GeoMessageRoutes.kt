@@ -5,15 +5,16 @@ import ar.pelotude.ktorfds.db.Vote
 import ar.pelotude.ktorfds.models.PublicGeoMessage
 import ar.pelotude.ktorfds.models.toPublicGeoMessage
 import ar.pelotude.ktorfds.msgs.Messenger
+import ar.pelotude.ktorfds.plugins.FrontendSession
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.sessions.*
 import io.ktor.util.pipeline.*
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.get as koinGet
-
 
 // TODO: Move
 @Serializable
@@ -23,25 +24,17 @@ data class ErrorResponse(val error: String)
 @Serializable
 data class UserCreationResponse(val id: Long)
 
-// TODO: Replace with something better
-private fun PipelineContext<Unit, ApplicationCall>.getRequesterIdOrNull(): Long? {
-    return call.request.cookies["userId"]?.toLongOrNull()?.takeIf { it > 0 }
-}
-
 // TODO: Intercept in pipeline
 private val ApplicationRequest.comesFromFetch: Boolean
     get() = this.header("X-Requested-With").equals("fetch")
 
 private suspend fun PipelineContext<Unit, ApplicationCall>.respondAuthRequired() =
-    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Authentication required"))
+    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Authentication required. Missing or invalid credentials."))
 
 private suspend fun PipelineContext<Unit, ApplicationCall>.respondXRequestedWithRequired() =
     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing required header or invalid value: X-Requested-With"))
 
 fun Route.messagesRouting() {
-    val devMode = (environment?.config?.propertyOrNull("ktor.environment")?.getString()
-        ?: "prod") == "dev"
-
     val database = koinGet<MessagesDatabase<Long>>()
 
     val messenger = koinGet<Messenger<Long, *>>()
@@ -54,24 +47,14 @@ fun Route.messagesRouting() {
         }
 
         database.createUser()?.let { newId ->
-            val userIdCookie = Cookie(
-                name = "userId",
-                value = newId.toString(),
-                path = "/",
-                httpOnly = true,
-                secure = !devMode,
-            )
-
-            call.response.cookies.append(userIdCookie)
-
+            call.sessions.set(FrontendSession(id = newId))
             call.respond(HttpStatusCode.Created, UserCreationResponse(newId))
         } ?: call.respond(HttpStatusCode.InternalServerError, "Something went wrong...")
     }
 
-    // TODO: proper auth handling
     route("/messages") {
         get { // get message
-            val requesterId: Long = getRequesterIdOrNull()
+            val requesterId: Long = call.sessions.get<FrontendSession>()?.id
                 ?: return@get respondAuthRequired()
 
             if (!call.request.comesFromFetch) {
@@ -117,7 +100,7 @@ fun Route.messagesRouting() {
         }
 
         post { // post message
-            val requesterId: Long = getRequesterIdOrNull()
+            val requesterId: Long = call.sessions.get<FrontendSession>()?.id
                 ?: return@post respondAuthRequired()
 
             if (!call.request.comesFromFetch) {
@@ -148,7 +131,7 @@ fun Route.messagesRouting() {
         }
 
         post("/vote") {
-            val requesterId: Long = getRequesterIdOrNull()
+            val requesterId: Long = call.sessions.get<FrontendSession>()?.id
                 ?: return@post respondAuthRequired()
 
             if (!call.request.comesFromFetch) {

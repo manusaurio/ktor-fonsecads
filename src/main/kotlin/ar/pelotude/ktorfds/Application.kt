@@ -3,6 +3,7 @@ package ar.pelotude.ktorfds
 import ar.pelotude.ktorfds.plugins.configureMonitoring
 import ar.pelotude.ktorfds.plugins.configureRouting
 import ar.pelotude.ktorfds.plugins.configureSerialization
+import ar.pelotude.ktorfds.plugins.configureSessions
 import io.ktor.server.application.*
 import org.koin.ktor.plugin.Koin
 
@@ -14,7 +15,7 @@ fun Application.module() {
     install(Koin) {
         modules(dependencies)
     }
-
+    configureSessions()
     configureSerialization()
     configureMonitoring()
     configureRouting()
