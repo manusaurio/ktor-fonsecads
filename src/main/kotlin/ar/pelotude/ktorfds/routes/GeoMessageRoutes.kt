@@ -87,6 +87,7 @@ fun Route.messagesRouting() {
                     maxDistance = radius,
                     since = since,
                     ids = ids.toLongArray(),
+                    limit = 1000,
                 ).map { it.toPublicGeoMessage(requesterId) }
 
                 else -> null
