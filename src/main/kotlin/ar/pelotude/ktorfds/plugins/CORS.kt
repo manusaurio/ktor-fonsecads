@@ -8,7 +8,7 @@ fun Application.configureCORS() {
     val devMode = (environment.config.propertyOrNull("ktor.environment")?.getString()
         ?: "prod") == "dev"
 
-    if (devMode) return;
+    if (!devMode) return;
 
     install(CORS) {
         allowHost("localhost:8081")
