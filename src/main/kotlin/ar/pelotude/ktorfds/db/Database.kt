@@ -102,7 +102,7 @@ class Database(val dbUrl: String): MessagesDatabase<Long> {
         creationTime = getLong("creation_time"),
         authorId = getLong("author_id"),
         deleted = getLong("deleted") != 0L,
-        likedByRequester = getInt("liked_by_requester"),
+        rated = getInt("liked_by_requester"),
     )
 
     private val writingMutex = Mutex()

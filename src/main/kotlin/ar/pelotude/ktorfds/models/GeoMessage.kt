@@ -18,7 +18,7 @@ data class GeoMessage<T>(
     val creationTime: Long,
     val authorId: Long,
     val deleted: Boolean,
-    val likedByRequester: Int = 0,
+    val rated: Int = 0,
 )
 
 @Serializable
@@ -26,22 +26,22 @@ data class PublicGeoMessage<T>(
     val id: Long,
     val location: Location,
     val content: T,
-    val likes: Long,
-    val dislikes: Long,
-    val liked: Int,
+    val likes: Long = 0,
+    val dislikes: Long = 0,
+    val rated: Int = 0,
     val creationTime: Long,
-    val bySelf: Boolean,
+    val bySelf: Boolean = false,
 )
 
-// TODO: the db already handles "likedByRequested"
+// TODO: the db already handles "likedByRequester"
 //  so it should do the same for "(created) bySelf"
 fun <T> GeoMessage<T>.toPublicGeoMessage(recipientId: Long) = PublicGeoMessage(
-    id,
-    location,
-    content,
-    likes,
-    dislikes,
-    likedByRequester,
-    creationTime,
+    id = id,
+    location = location,
+    content = content,
+    likes = likes,
+    dislikes = dislikes,
+    rated = rated,
+    creationTime = creationTime,
     bySelf = authorId == recipientId,
 )
