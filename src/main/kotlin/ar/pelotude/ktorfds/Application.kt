@@ -1,5 +1,6 @@
 package ar.pelotude.ktorfds
 
+import ar.pelotude.ktorfds.plugins.configureCORS
 import ar.pelotude.ktorfds.plugins.configureMonitoring
 import ar.pelotude.ktorfds.plugins.configureRouting
 import ar.pelotude.ktorfds.plugins.configureSerialization
@@ -18,5 +19,6 @@ fun Application.module() {
     configureSessions()
     configureSerialization()
     configureMonitoring()
+    configureCORS()
     configureRouting()
 }
