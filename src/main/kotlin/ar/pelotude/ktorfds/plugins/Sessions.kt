@@ -20,6 +20,8 @@ fun Application.configureSessions() {
             cookie.path = "/"
             cookie.maxAge = 400.days
             cookie.secure = !devMode
+            cookie.httpOnly = false
+            cookie.extensions["SameSite"] = if (devMode) "None" else "Strict"
 
             transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
         }
