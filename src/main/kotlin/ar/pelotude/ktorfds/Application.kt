@@ -6,6 +6,7 @@ import ar.pelotude.ktorfds.plugins.configureRouting
 import ar.pelotude.ktorfds.plugins.configureSerialization
 import ar.pelotude.ktorfds.plugins.configureSessions
 import io.ktor.server.application.*
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import org.koin.ktor.plugin.Koin
 
 fun main(args: Array<String>): Unit =
@@ -16,6 +17,7 @@ fun Application.module() {
     install(Koin) {
         modules(dependencies)
     }
+    install(XForwardedHeaders)
     configureSessions()
     configureSerialization()
     configureMonitoring()
